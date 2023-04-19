@@ -36,7 +36,7 @@ parseNumber n = if isDigit' n then Just (JNumber (read n)) else Nothing
 isDigit' :: String -> Bool
 isDigit' [] = False
 isDigit' [x] = isDigit x
-isDigit' ('-':xs) = isDigit' xs
+isDigit' ('.':xs) = isDigit' xs
 isDigit' (x:xs) = (isDigit x) && (isDigit' xs) 
 
 splitNodes :: Char -> [Char]-> [String]
