@@ -1,6 +1,8 @@
-module JsonObject(JValue(..),NodeName) where 
+
+
 import Data.Char
 import Control.Applicative hiding (many)
+
 
 data JValue a = JBool Bool
         |  JString String
@@ -20,15 +22,15 @@ instance Functor Parser where
         )
 
 instance Applicative Parser where
-    -- pure :. a -> Parser
+    --pure :: a -> Parser a
     pure a = Parser (\x -> Just(a, x))
-    (Parser a) <*> (Parser b) = Parser (\x -> (do
-        (a', rest) <- a x 
-        (b', rest') <- b x
-        Just(a' b',rest')))  
-    (Parser p1) *> (Parser p2) = Parser $ \input -> do
-        (_, input') <- p1 input
-        p2 input'
+    --(<*>) :: Parser (a -> b) -> Parser a -> Parser b
+    (Parser f) <*> (Parser g) = Parser (\input -> case f input of
+        Just (func, rest) -> case g rest of
+            Just (val, rest') -> Just (func val, rest')
+            Nothing -> Nothing
+        Nothing -> Nothing)
+
 
 instance Alternative Parser where
     empty = Parser(\_ -> Nothing)
@@ -69,14 +71,13 @@ many' p = Parser $ \s ->
     in step [] s
 
 
-char' :: Char -> Parser Char
-char' c = Parser (\x -> case x of 
-                (y:ys) | y == c -> Just (c, ys)
+charEnd :: Char -> Parser Char
+charEnd c = Parser (\x -> case reverse x of 
+                (y:ys) | y == c -> Just (c, reverse ys)
                 _ -> Nothing)
 
-
-sepBy' :: Parser a -> Parser b -> Parser [a]
-sepBy' p sep = Parser $ \x ->
+sepBy :: Parser a -> Parser b -> Parser [a]
+sepBy p sep = Parser $ \x ->
   case runParser p x of
     Just (y, ys) ->
       let rest = runParser (many' (sep *> p)) ys
@@ -85,12 +86,28 @@ sepBy' p sep = Parser $ \x ->
         Nothing -> Just ([y], ys)
     Nothing -> Nothing
 
-
 parseValue :: Parser (JValue a)
 parseValue = parseBool <|> parseString <|> parseNumber <|> parseArray <|> parseNull
     where parseNull = Parser (\x -> case x of 
                                     'n':'u':'l':'l':rest -> Just (JNull, rest)  
                                     _ -> Nothing)
                                     
+
+parseList :: Parser [JValue a]
+parseList = char '[' *> whitespace *> parseValue `sepBy` ( char ',' *> whitespace) <* whitespace <* char ']'
+
+
+char :: Char -> Parser Char
+char c = Parser (\input -> case input of
+    x:xs | x == c -> Just (c, xs)
+    _ -> Nothing)
+
+
+
 parseArray :: Parser (JValue a)
-parseArray = char' '[' *> whitespace *> (JArray <$> sepBy' parseValue (char' ',' *> whitespace)) <* whitespace
+parseArray = Parser (\x -> (case parse parseList x of
+    Just (x, a) -> Just(JArray x, a)
+    Nothing -> Nothing))
+
+runParser :: Parser a -> String -> Maybe (a, String)
+runParser (Parser p) input = p input
