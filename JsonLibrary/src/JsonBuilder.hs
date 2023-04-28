@@ -102,6 +102,8 @@ parseJson xs
         | isOpenL xs == True =  (parseList xs)
         | otherwise = Nothing
 
+
+
 getJVal :: String -> Maybe JValue
 getJVal xs 
             |Data.Maybe.isJust (parseBool xs) = parseBool xs

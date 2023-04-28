@@ -1,4 +1,4 @@
-
+module Funktors.JsonObject where
 
 import Data.Char
 import Control.Applicative hiding (many)
@@ -144,8 +144,13 @@ intercalate sep [] = []
 intercalate sep [x] = x
 intercalate sep (x:xs) = x ++ sep ++ intercalate sep xs
 
-parseJson :: String -> (JValue a)
-parseJson xs = let Just (asw,rest) = parse parseObject xs in asw
+parseJson :: String -> String
+parseJson "" = "Not is a Json"
+parseJson "{}" = "{}"
+parseJson  xs = let Just (asw,rest) = parse parseValue xs in if rest == "" then (show asw)  else "Not is a Json"
 
-compruveJson :: String -> String
-compruveJson xs = let Just (asw,rest) = parse parseObject xs in if rest == "" then (writeJson asw)  else "Not is a Json"
+jsonJValue :: String -> String
+jsonJValue "" = "Not is a Json"
+jsonJValue "{}" = "{}"
+jsonJValue xs = let Just (asw,rest) = parse parseValue xs in if rest == "" then (writeJson asw)  else "Not is a Json"
+
