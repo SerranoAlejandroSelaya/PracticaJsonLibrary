@@ -1,50 +1,21 @@
-module Main (main) where
+module Funktors.Main (main) where
+import JsonBuilder
+import JsonObject 
 
 main :: IO ()
-main = print("aa")
-
-
-{-
-import JsonLibrary
-
--}
-
---class Functor f where 
-  --  fmap:: (a->b) -> fa -> fb
-
---instance Functor [] where 
-    --map:: (a -> b)-> [a] -> [b]
-    --fmap :: (a->b) -> [a] -> [b]
-    --fmap = map
-
-data Btree a = Leaf a | Node a (Btree a) (Btree a)
+main = print ((parseJson strJson5) )
 
 
 
-inc::(Functor f, Num a) => f a -> f a
-inc = fmap(+1)
+jsonValue = JObj[("daysOfWeek", (Just (JArray[(Just (JString "t")),(Just(JString "M"))]))), ("Age",Just (JNumber 3.1416) )]
 
-{-
-instance Functor Btree where
-  --fmap:: (a->b) -> Btree a -> Btree b
-  fmap g(Leaf a) = Leaf(g a)
-  fmap g(Node a l r) = Node(g a) (fmap g l) (fmap g r)
-
-sqre :: [Int] -> [Int]
-sqre map(\x -> x * x)
-
-duplicateChar :: [Char] -> [Char]
-duplicateChar (x:xs) = x :x : duplicateChar xs
+strJson  = "{\"a\":10,\"isTrue\":true ,\"name\":\"Jhon\", \"List\" : [\"uno\",\"dos\"]}"
+strJson1 = "{\"a\":10,\"isTrue\":true ,\"name\":\"Jhon\", \"Obj\" : {\"uno\":\"dos\"}}"
+strJson2 = "{\"a\":10,\"isTrue\":true ,\"name\":\"Jhon\", \"List\" : [\"uno\",[\"dos\",2]]}"
+strJson3 = "{\"a\":10,\"isTrue\":true ,\"name\":\"Jhon\", \"Obj\" : {\"List\":[True,False]}}"
+strJson4 = "{\"a\":10,\"isTrue\":true ,\"name\":\"Jhon\", \"List\" : [\"Obj\",{\"List\":[1,2,3]}]}"
+strJson5 = "{\"a\":10,\"isTrue\":true, \"Obj\":{Obj:{Obj:{Num:1, list:[2,3,4]}}}}"
 
 
-duplicateChar :: [Char] -> [Char]
-duplicateChar = concatMap(\x -> [x,x])
--}
 
-sqre:: (Functor f) => f Int -> f Int
-sqre = fmap(\x -> x*x)
-
-
-duplicateChar :: [Char] -> [Char]
-duplicateChar = fmap(\x -> x : [x,x])
 
