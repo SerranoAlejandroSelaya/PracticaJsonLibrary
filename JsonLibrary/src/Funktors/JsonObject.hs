@@ -6,10 +6,11 @@ import Control.Applicative hiding (many)
 
 data JValue a = JBool Bool
         |  JString String
-        |  JObj [(String, Maybe (JValue a))]
+        |  JObj [(String, (JValue a))]
         |  JNumber Double 
         |  JArray [(JValue a)]
         |  JNull 
+        |  JToken (String, (JValue a))
         deriving (Show)
 
 data Parser a = Parser {parse:: String -> Maybe(a,String)} 
@@ -87,14 +88,10 @@ sepBy p sep = Parser $ \x ->
     Nothing -> Nothing
 
 parseValue :: Parser (JValue a)
-parseValue = parseBool <|> parseString <|> parseNumber <|> parseArray <|> parseNull
+parseValue = parseBool <|> parseString <|> parseNumber <|> parseArray <|> parseNull <|> parseObject
     where parseNull = Parser (\x -> case x of 
                                     'n':'u':'l':'l':rest -> Just (JNull, rest)  
                                     _ -> Nothing)
-                                    
-
-parseList :: Parser [JValue a]
-parseList = char '[' *> whitespace *> parseValue `sepBy` ( char ',' *> whitespace) <* whitespace <* char ']'
 
 
 char :: Char -> Parser Char
@@ -102,7 +99,8 @@ char c = Parser (\input -> case input of
     x:xs | x == c -> Just (c, xs)
     _ -> Nothing)
 
-
+parseList :: Parser [JValue a]
+parseList = char '[' *> whitespace *>  sepBy parseValue ( char ',' *> whitespace) <* whitespace <* char ']'
 
 parseArray :: Parser (JValue a)
 parseArray = Parser (\x -> (case parse parseList x of
@@ -111,3 +109,43 @@ parseArray = Parser (\x -> (case parse parseList x of
 
 runParser :: Parser a -> String -> Maybe (a, String)
 runParser (Parser p) input = p input
+
+parseToken ::  Parser(String, JValue a)
+parseToken = Parser (\x -> case x of
+    xs -> let Just (JString key, rest) = runParser parseString xs
+          in case runParser (whitespace *> char ':' *> whitespace *> parseValue) rest of
+            Just (val, rest') -> Just ((key, val), rest')
+            Nothing -> Nothing)
+
+parseObj :: Parser [(String, JValue a1)]
+parseObj = char '{' *> whitespace *>  sepBy parseToken (char ',' *> whitespace) <* whitespace <* char '}'
+
+
+parseObject :: Parser (JValue a)
+parseObject = Parser (\x -> (case parse parseObj x of
+    Just (x, a) -> Just(JObj x, a)
+    Nothing -> Nothing))
+
+
+writeJson :: JValue a -> String
+writeJson (JBool True) = "true"
+writeJson (JBool False) = "false"
+writeJson (JString s) = show s
+writeJson (JNumber n) = show n
+writeJson JNull = "null"
+writeJson (JObj pairs) = "{" ++ intercalate "," (map pairToString pairs) ++ "}"
+  where
+    pairToString (key, val) = show key ++ ":" ++ writeJson val
+writeJson (JArray vals) = "[" ++ intercalate "," (map writeJson vals) ++ "]"
+writeJson (JToken (key, val)) = "{" ++ show key ++ ":" ++ writeJson val ++ "}"
+
+intercalate :: [a] -> [[a]] -> [a]
+intercalate sep [] = []
+intercalate sep [x] = x
+intercalate sep (x:xs) = x ++ sep ++ intercalate sep xs
+
+parseJson :: String -> (JValue a)
+parseJson xs = let Just (asw,rest) = parse parseObject xs in asw
+
+compruveJson :: String -> String
+compruveJson xs = let Just (asw,rest) = parse parseObject xs in if rest == "" then (writeJson asw)  else "Not is a Json"
